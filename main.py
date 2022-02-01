@@ -15,6 +15,12 @@ with onto:
         # transactions between addresses.
         pass
 
+    class EnvironmentFriendlyBlockchain(Blockchain):
+        # A blockchain is environment friendly if the cryptography proof
+        # conesus mechanism it uses is not based on work that spends a lot
+        # of computation resources to work.
+        is_cryptography_proof_energy_efficient = True
+    
     class BlockchainName(owlready2.DataProperty, owlready2.FunctionalProperty):
         domain = [Blockchain]
         range = [str]
@@ -48,6 +54,14 @@ with onto:
         # A non-fungible token is a token, that is unique in the world, unlike 
         # fiat money in the real world where 1 lev is the same as any other 1 lev.
         pass
+
+    class ERC1155TokenStandard(TokenStandard):
+        # The ERC1155 improves upon ERC721 in several key points. It can be
+        # used to issue both fungible and non-fungible tokens, but in the real
+        # world it is used more for non-fungible tokens. ERC20 is still the dominant
+        # fungible tokens standard.
+        pass
+    
     
     class Token(Thing):
         pass
@@ -75,22 +89,33 @@ with onto:
     class has_cryptography_proof(Blockchain >> CryptographyProof):
         pass
 
+    class is_cryptography_proof_energy_efficient(Blockchain >> bool):
+        pass
+
+    class cryptography_proof_used_by(CryptographyProof >> Blockchain):
+        inverse_propery = has_cryptography_proof
+
     class has_token_standard(Blockchain >> TokenStandard):
         pass
 
+    class token_standard_belongs_to(TokenStandard >> Blockchain):
+        inverse_propery = has_token_standard
+        
     class has_blockchain_name(Blockchain >> BlockchainName):
         pass
 
     class is_turing_complete(Blockchain >> bool):
         pass
 
-    class is_eco_friendly(DataProperty, FunctionalProperty):
+    class has_non_fungible_tokens(Blockchain >> bool):
+        pass
+
+    class is_environment_friendly(DataProperty, FunctionalProperty):
         domain = [Blockchain]
         range = [bool]
         equivalent_to = [
             Blockchain & 
-            Not(has_cryptography_proof.some(ProofOfWork)) & 
-            has_cryptography_proof.some(ProofOfStake) 
+            is_cryptography_proof_energy_efficient.some(True)
         ]
 
     # The main blockchains
@@ -119,13 +144,6 @@ with onto:
             has_blockchain_name.only("Bitcoin")
         ]
 
-    class Doge(Blockchain):
-        equivalent_to = [
-            Blockchain &
-            has_cryptography_proof.some(ProofOfWork) &
-            is_turing_complete.some(False) &
-            has_blockchain_name.only("Doge")
-        ]
     class Cardano(Blockchain):
         equivalent_to = [
             Blockchain &
@@ -134,7 +152,10 @@ with onto:
             has_blockchain_name.only("Cardano")
         ]
 
-    class is_based_on_blockchain(Address >> Blockchain):
+    class MarketSegment(Thing):
+        pass
+    
+    class is_on_blockchain(Address >> Blockchain):
         pass
 
     # Other
@@ -142,14 +163,22 @@ with onto:
     class ERC20ContractAddress(ContractAddress):
         equivalent_to = [
             Address & 
-            (is_based_on_blockchain.some(Ethereum) | is_based_on_blockchain.some(Ethereum2)) &
+            (is_on_blockchain.some(Ethereum) | is_on_blockchain.some(Ethereum2)) &
             has_token_standard.some(ERC20TokenStandard)
         ]
      
     class ERC721ContractAddress(ContractAddress):
         equivalent_to = [
             Address & 
-            (is_based_on_blockchain.some(Ethereum) | is_based_on_blockchain.some(Ethereum2)) &
+            (is_on_blockchain.some(Ethereum) | is_on_blockchain.some(Ethereum2)) &
+            has_token_standard.some(ERC721TokenStandard)
+        ]
+
+
+    class ERC1155ContractAddress(ContractAddress):
+        equivalent_to = [
+            Address & 
+            (is_on_blockchain.some(Ethereum) | is_on_blockchain.some(Ethereum2)) &
             has_token_standard.some(ERC721TokenStandard)
         ]
 
@@ -186,5 +215,5 @@ pankake_swap = DecentralizedExchange("PankakeSwap")
 # AllDifferent([ binance, bitfinex, kraken, uniswap, dydx, pankake_swap ])
 
 
-print(ethereum2.is_eco_friendly)
+print(ethereum2.is_environment_friendly)
 
